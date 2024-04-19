@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540727567099",
+    "project_id": "bookster-d08e7",
+    "storage_bucket": "bookster-d08e7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540727567099:android:90eb2d7dafd5c1d706065e",
+        "android_client_info": {
+          "package_name": "com.example.bookster"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh8nac8Kq7AReLBd_bwT9QKlfCnEwKmN0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
