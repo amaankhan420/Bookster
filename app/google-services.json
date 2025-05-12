@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "540727567099",
+    "firebase_url": "https://bookster-d08e7-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "bookster-d08e7",
     "storage_bucket": "bookster-d08e7.appspot.com"
   },
@@ -12,7 +13,28 @@
           "package_name": "com.example.bookster"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "540727567099-0gr6c91dup8hobbl7pl6p10litncru24.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bookster",
+            "certificate_hash": "1c0ca7e607415e14a96a67d8cd96b4c2404148e8"
+          }
+        },
+        {
+          "client_id": "540727567099-91s61b5jf77s1b1beq09aks9g0qi3r6a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bookster",
+            "certificate_hash": "b2ea5c5bf7a32ac935c24d2c5dc1bdcd2c06e3fc"
+          }
+        },
+        {
+          "client_id": "540727567099-t03mak4ih3onhk841ag4465ng2di49dt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCh8nac8Kq7AReLBd_bwT9QKlfCnEwKmN0"
@@ -20,7 +42,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "540727567099-t03mak4ih3onhk841ag4465ng2di49dt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -2,15 +2,18 @@ package com.example.bookster.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val White = Color(0xFFFFFFFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-val AppBarLight = Color(0xFF89A1E7)
-val SectionLight = Color(0xFFD1E4E9)
+// Light Theme Colors
+val LightPrimary = Color(0xFF1A237E)
+val LightOnPrimary = Color(0xFFFFFFFF)
+val LightBackground = Color(0xFFF5F5F7)
+val LightSurface = Color(0xFFFFFFFF)
+val LightAppBar = Color(0xFFE3EAFD)
+val LightSection = Color(0xFFB8C4DC)
 
-val Black = Color(0xFF000000)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
-val AppBarDark = Color(0xFF24262B)
-val SectionDark = Color(0xFF2D2E30)
-
+// Dark Theme Colors
+val DarkPrimary = Color(0xFF3B9AE7)
+val DarkOnPrimary = Color(0xFF0D1117)
+val DarkBackground = Color(0xFF121212)
+val DarkSurface = Color(0xFF1E1E1E)
+val DarkAppBar = Color(0xFF263238)
+val DarkSection = Color(0xFF333C47)

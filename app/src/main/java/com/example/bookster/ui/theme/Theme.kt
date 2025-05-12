@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.bookster.ui.theme
 
 import android.app.Activity
@@ -16,35 +18,27 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = White,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    primaryContainer = AppBarDark,
-    secondaryContainer = SectionDark
+    primary = DarkPrimary,
+    onPrimary = DarkOnPrimary,
+    background = DarkBackground,
+    surface = DarkSurface,
+    primaryContainer = DarkAppBar,
+    secondaryContainer = DarkSection
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Black,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    primaryContainer = AppBarLight,
-    secondaryContainer = SectionLight
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = LightPrimary,
+    onPrimary = LightOnPrimary,
+    background = LightBackground,
+    surface = LightSurface,
+    primaryContainer = LightAppBar,
+    secondaryContainer = LightSection
 )
 
 @Composable
 fun BooksterTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -66,8 +60,6 @@ fun BooksterTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        colorScheme = colorScheme, typography = Typography, content = content
     )
 }

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Bookster</string>
+    <string name="bookster_directory">Bookster</string>
 </resources>

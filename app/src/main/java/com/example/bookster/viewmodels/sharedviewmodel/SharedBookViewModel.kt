@@ -1,4 +1,4 @@
-package com.example.bookster.sharedviewmodel
+package com.example.bookster.viewmodels.sharedviewmodel
 
 import android.os.Parcel
 import android.os.Parcelable
@@ -16,36 +16,43 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+@Suppress("DEPRECATION")
 class SharedBookViewModel : ViewModel(), Parcelable {
     private val _booksList: MutableState<List<Book>> = mutableStateOf(emptyList())
 
     var booksList = _booksList
 
+
     fun setGenreNameList(books: List<Book>) {
         _booksList.value = books
     }
 
-    suspend fun getBooksFromFirestore(collectionName: String): List<Book> = suspendCancellableCoroutine { continuation ->
-        val books = mutableListOf<Book>()
-        FirebaseFirestore.getInstance().collection(collectionName)
-            .get()
-            .addOnSuccessListener { result ->
-                for (document in result) {
-                    val coverUrl = document.getString(cover)
-                    val title = document.getString(title)
-                    val description = document.getString(description)
-                    val pdfUrl = document.getString(pdf)
-                    val book = Book(collectionName, document.id, coverUrl, title, description, pdfUrl)
-                    books.add(book)
-                }
+    suspend fun getBooksFromFirestore(collectionName: String): List<Book> =
+        suspendCancellableCoroutine { continuation ->
+            try {
+                val books = mutableListOf<Book>()
+                FirebaseFirestore.getInstance().collection(collectionName).get()
+                    .addOnSuccessListener { result ->
+                        for (document in result) {
+                            val coverUrl = document.getString(cover)
+                            val title = document.getString(title)
+                            val description = document.getString(description)
+                            val pdfUrl = document.getString(pdf)
+                            val book = Book(
+                                collectionName, document.id, coverUrl, title, description, pdfUrl
+                            )
+                            books.add(book)
+                        }
 
-                continuation.resume(books)
+                        continuation.resume(books)
+                    }.addOnFailureListener { exception ->
+                        Log.w("SharedBookViewModel", "Error getting documents: ", exception)
+                        continuation.resumeWithException(exception)
+                    }
+            } catch (e: Exception) {
+                continuation.resumeWithException(e)
             }
-            .addOnFailureListener { exception ->
-                Log.w("Firestore", "Error getting documents: ", exception)
-                continuation.resumeWithException(exception)
-            }
-    }
+        }
 
     override fun describeContents(): Int {
         return 0
