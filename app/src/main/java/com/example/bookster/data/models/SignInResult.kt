@@ -1,4 +1,4 @@
-package com.example.bookster.states
+package com.example.bookster.data.models
 
 data class SignInResult(
     val data: UserData?,

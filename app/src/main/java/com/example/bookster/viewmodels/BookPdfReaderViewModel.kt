@@ -1,6 +1,5 @@
 package com.example.bookster.viewmodels
 
-
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -64,6 +63,10 @@ class BookPdfReaderViewModel : ViewModel() {
         if (currentPage.intValue > 0) {
             loadPage(currentPage.intValue - 1)
         }
+    }
+
+    fun resetScale() {
+        scaleFactor.floatValue = 1f
     }
 
     override fun onCleared() {

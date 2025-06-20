@@ -22,8 +22,8 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = DarkOnPrimary,
     background = DarkBackground,
     surface = DarkSurface,
-    primaryContainer = DarkAppBar,
-    secondaryContainer = DarkSection
+    secondary = DarkOnSecondary,
+    onSecondary = MoreButtonDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -31,8 +31,8 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = LightOnPrimary,
     background = LightBackground,
     surface = LightSurface,
-    primaryContainer = LightAppBar,
-    secondaryContainer = LightSection
+    secondary = LightOnSecondary,
+    onSecondary = MoreButtonLight
 )
 
 @Composable

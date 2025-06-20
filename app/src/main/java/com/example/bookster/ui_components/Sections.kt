@@ -2,7 +2,6 @@ package com.example.bookster.ui_components
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,14 +46,7 @@ fun Section(type: String, navController: NavController) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 8.dp)
-            .background(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = RoundedCornerShape(16.dp)
-            )
-    ) {
+    Column {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -63,39 +55,52 @@ fun Section(type: String, navController: NavController) {
                 .fillMaxWidth()
         ) {
             Text(
-                modifier = Modifier.padding(start = 5.dp),
+                modifier = Modifier.padding(start = 20.dp),
                 text = type,
                 fontSize = 20.sp,
             )
             TextButton(
                 onClick = {
                     navController.currentBackStackEntry?.savedStateHandle?.set(
-                        key = "category", value = type
+                        key = "category",
+                        value = type
+                    )
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        key = "books",
+                        value = bookViewModel.booksList.value
                     )
                     navController.navigate(Routes.Category.route)
-                }) {
+                }
+            ) {
                 Text(
-                    text = "More", style = TextStyle(
-                        textDecoration = TextDecoration.Underline, fontStyle = FontStyle.Italic
-                    ), color = MaterialTheme.colorScheme.primary
+                    modifier = Modifier.padding(end = 10.dp),
+                    text = "More",
+                    style = TextStyle(
+                        textDecoration = TextDecoration.Underline,
+                        fontStyle = FontStyle.Italic
+                    ),
+                    color = MaterialTheme.colorScheme.onSecondary
                 )
             }
         }
 
-        Row(
+        LazyRow(
             modifier = Modifier
                 .padding(top = 3.dp, bottom = 5.dp, start = 5.dp, end = 5.dp)
-                .horizontalScroll(rememberScrollState())
                 .fillMaxWidth()
                 .height(240.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp)
         ) {
             if (bookViewModel.booksList.value.isNotEmpty()) {
-                for (i in 0 until min(8, bookViewModel.booksList.value.size)) {
-                    Cards(book = bookViewModel.booksList.value[i], navController = navController)
+                items(min(5, bookViewModel.booksList.value.size)) { index ->
+                    Cards(
+                        book = bookViewModel.booksList.value[index],
+                        navController = navController
+                    )
                 }
             } else {
-                repeat(5) {
+                items(5) {
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 8.dp)

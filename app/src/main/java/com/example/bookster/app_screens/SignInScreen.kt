@@ -1,5 +1,9 @@
 package com.example.bookster.app_screens
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,8 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bookster.R
-import com.example.bookster.states.SignInState
-import com.example.bookster.states.UserData
+import com.example.bookster.data.models.SignInState
+import com.example.bookster.data.models.UserData
 import com.example.bookster.viewmodels.SignInViewModel
 
 @Composable
@@ -58,12 +62,27 @@ fun SignInScreen(
 
         when {
             state.isLoading -> LoadingIndicator()
-            userData == null -> SignInButton(
-                onSignInClick = {
-                    viewModel.startSignIn()
-                    onSignInClick()
-                }
-            )
+            userData == null -> {
+                SignInButton(
+                    onSignInClick = {
+                        if (isNetworkAvailable(context)) {
+                            viewModel.startSignIn()
+                            onSignInClick()
+                        } else {
+                            showToast(context, "No internet connection. Please try again.")
+                        }
+                    }
+                )
+            }
+
+            else -> {
+                Text(
+                    text = "Welcome, ${userData.userName}!",
+                    fontSize = 24.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -106,17 +125,19 @@ private fun SignInButton(onSignInClick: () -> Unit) {
         Image(
             painter = painterResource(id = R.drawable.ic_google_logo),
             contentDescription = "Google Logo",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
-private fun showToast(context: android.content.Context, message: String) {
-
-    android.widget.Toast.makeText(
-        context,
-        message,
-        android.widget.Toast.LENGTH_LONG
-    ).show()
+private fun showToast(context: Context, message: String) {
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 }
 
+private fun isNetworkAvailable(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val network = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}

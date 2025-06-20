@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.bookster.states.Book
+import com.example.bookster.data.models.Book
 import com.example.bookster.utils.Routes
 
 @Composable

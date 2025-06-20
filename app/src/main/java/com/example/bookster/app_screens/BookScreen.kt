@@ -1,6 +1,8 @@
 package com.example.bookster.app_screens
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,12 +30,13 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
-import com.example.bookster.states.Book
+import com.example.bookster.data.models.Book
 import com.example.bookster.states.DownloadState
 import com.example.bookster.ui_components.TopBars
 import com.example.bookster.utils.Routes
 import com.example.bookster.viewmodels.BookScreenViewModel
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 fun BookScreen(
     bookScreenViewModel: BookScreenViewModel,
@@ -44,22 +47,22 @@ fun BookScreen(
     val downloadState by bookScreenViewModel.downloadState
     val isDownloaded by bookScreenViewModel.isDownloaded
 
-    // Check download status when screen loads or book changes
     LaunchedEffect(book.title) {
         bookScreenViewModel.checkIfBookDownloaded(context, book.title)
     }
 
-    // Handle download state changes
     LaunchedEffect(downloadState) {
         when (downloadState) {
             is DownloadState.Success -> {
                 Toast.makeText(context, "Download completed", Toast.LENGTH_SHORT).show()
                 bookScreenViewModel.resetDownloadState()
             }
+
             is DownloadState.Error -> {
                 Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
                 bookScreenViewModel.resetDownloadState()
             }
+
             else -> {}
         }
     }
@@ -67,6 +70,7 @@ fun BookScreen(
     BookDetailContent(book, navController, bookScreenViewModel, isDownloaded)
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Composable
 private fun BookDetailContent(
     book: Book,
@@ -96,19 +100,32 @@ private fun BookDetailContent(
 
             val isLoading = bookScreenViewModel.downloadState.value is DownloadState.Loading
 
+            if (!book.author.isNullOrBlank()) {
+                Text(
+                    text = "By ${book.author}",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))
             } else {
                 OutlinedButton(
                     onClick = {
                         if (isDownloaded) {
-                            bookScreenViewModel.getDownloadedFile(context, book.title ?: "")?.let { file ->
-                                navController.currentBackStackEntry?.savedStateHandle?.set(
-                                    key = "file",
-                                    value = file
-                                )
-                                navController.navigate(Routes.BookPDFReader.route)
-                            } ?: run {
+                            bookScreenViewModel.getDownloadedFile(context, book.title ?: "")
+                                ?.let { file ->
+                                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                                        key = "file",
+                                        value = file
+                                    )
+                                    navController.navigate(Routes.BookPDFReader.route)
+                                } ?: run {
                                 Toast.makeText(
                                     context,
                                     "Cannot find the downloaded file",
@@ -130,17 +147,15 @@ private fun BookDetailContent(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .height(50.dp)
-                        .fillMaxWidth()
                 ) {
                     Text(
                         text = if (isDownloaded) "Read" else "Download",
                         fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
             BookDescription(book.description)
         }
     }
@@ -150,21 +165,21 @@ private fun BookDetailContent(
 private fun BookCoverImage(coverUrl: String?) {
     val painter = rememberAsyncImagePainter(coverUrl)
 
-    Image(
-        painter = painter,
-        contentDescription = "Book cover",
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(600.dp)
-            .padding(horizontal = 16.dp),
-        contentScale = ContentScale.Crop
-    )
-
     if (painter.state is AsyncImagePainter.State.Error) {
         Text(
             text = "Failed to load cover image",
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(8.dp)
+        )
+    } else {
+        Image(
+            painter = painter,
+            contentDescription = "Book cover",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(600.dp)
+                .padding(horizontal = 16.dp),
+            contentScale = ContentScale.Crop
         )
     }
     Spacer(modifier = Modifier.height(10.dp))

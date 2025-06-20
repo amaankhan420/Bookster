@@ -23,7 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.bookster.states.Book
+import com.example.bookster.data.models.Book
 import com.example.bookster.utils.Routes
 import com.example.bookster.utils.functions.AuthenticateClient
 import com.example.bookster.viewmodels.BookPdfReaderViewModel
@@ -31,7 +31,6 @@ import com.example.bookster.viewmodels.BookScreenViewModel
 import com.example.bookster.viewmodels.DownloadedBooksScreenViewModel
 import com.example.bookster.viewmodels.HomeViewModel
 import com.example.bookster.viewmodels.SignInViewModel
-import com.example.bookster.viewmodels.sharedviewmodel.SharedBookViewModel
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
 import java.io.File
@@ -42,9 +41,6 @@ fun MainNavigationScreen() {
     val context = LocalContext.current
     val navController = rememberNavController()
     val lifecycleOwner = LocalLifecycleOwner.current
-
-    val sharedBookViewModel = viewModel<SharedBookViewModel>()
-
 
     val authenticateClient = remember {
         AuthenticateClient(
@@ -111,7 +107,6 @@ fun MainNavigationScreen() {
             composable(route = Routes.Home.route) {
                 val homeViewModel = viewModel<HomeViewModel>()
                 HomeScreen(
-                    userData = authenticateClient.getSignedInUser(),
                     onSignOut = {
                         lifecycleOwner.lifecycleScope.launch {
                             authenticateClient.signOut()
@@ -132,16 +127,20 @@ fun MainNavigationScreen() {
                     .previousBackStackEntry
                     ?.savedStateHandle
                     ?.get<String>("category")
-
+                val books = navController
+                    .previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<List<Book>>("books") ?: emptyList()
 
                 if (categoryName != null) {
                     CategoryScreen(
-                        sharedBookViewModel = sharedBookViewModel,
                         navController = navController,
-                        categoryName = categoryName
+                        categoryName = categoryName,
+                        books = books
                     )
                 }
             }
+
 
             // Book Screen
             composable(route = Routes.Book.route) {

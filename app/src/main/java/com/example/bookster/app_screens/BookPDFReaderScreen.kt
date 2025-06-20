@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -23,21 +23,25 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,6 +51,7 @@ import com.example.bookster.ui_components.TopBars
 import com.example.bookster.viewmodels.BookPdfReaderViewModel
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.max
 
 @Composable
 fun BookPDFReaderScreen(
@@ -56,186 +61,209 @@ fun BookPDFReaderScreen(
 ) {
     val currentBitmap = bookPdfReaderViewModel.currentBitmap
     val isLoading = bookPdfReaderViewModel.isLoading
-    val scaleFactor = bookPdfReaderViewModel.scaleFactor
+    val scaleFactor = remember { mutableFloatStateOf(1f) }
+    val offsetX = remember { mutableFloatStateOf(0f) }
+    val offsetY = remember { mutableFloatStateOf(0f) }
+
     val currentPage = bookPdfReaderViewModel.currentPage
     val totalPages = bookPdfReaderViewModel.totalPages
-    val keyboardController = LocalSoftwareKeyboardController.current
 
-    // New state to track page change gestures
-    val pageChangeThreshold = remember { mutableFloatStateOf(0f) }
-    val pageChangeLocked = remember { mutableStateOf(false) }
+    // Track if a page change is in progress to avoid multiple triggers per swipe
+    var isPageChanging by remember { mutableStateOf(false) }
+
+    // For keyboard dismissal
+    val focusManager = LocalFocusManager.current
+
+    // For TextField state
+    var textFieldValue by remember { mutableStateOf((currentPage.intValue + 1).toString()) }
+
+    // Update textFieldValue if currentPage changes from outside
+    LaunchedEffect(currentPage.intValue) {
+        textFieldValue = (currentPage.intValue + 1).toString()
+    }
 
     LaunchedEffect(pdfFile) {
         bookPdfReaderViewModel.openPdf(pdfFile)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    keyboardController?.hide()
-                })
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenWidthPx = with(LocalDensity.current) { screenWidth.toPx() }
+    val screenHeightPx = with(LocalDensity.current) { screenHeight.toPx() }
+
+    Scaffold(topBar = {
+        TopBars(heading = pdfFile.name.removeSuffix(".pdf"), navController = navController)
+    }) { paddingValues ->
+        if (isLoading.value) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues), Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-    ) {
-        Scaffold(topBar = {
-            TopBars(heading = pdfFile.name.removeSuffix(".pdf"), navController = navController)
-        }) { paddingValues ->
-            if (isLoading.value) {
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(Color.White)
+                    // Dismiss keyboard on tap outside
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { focusManager.clearFocus() })
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val bitmap = currentBitmap.value ?: return@detectTransformGestures
+
+                                val defaultScale = screenWidthPx / bitmap.width
+                                val newScale = (scaleFactor.floatValue * zoom).coerceIn(
+                                    defaultScale,
+                                    defaultScale * 4
+                                )
+
+                                val scaledWidth = bitmap.width * newScale
+                                val scaledHeight = bitmap.height * newScale
+
+                                val maxOffsetX = max(0f, (scaledWidth - screenWidthPx) / 2)
+                                val maxOffsetY = max(0f, (scaledHeight - screenHeightPx) / 2)
+
+                                // Only change page if not already changing and swipe is strong enough
+                                if (abs(pan.x) > 50 && newScale == defaultScale && !isPageChanging) {
+                                    isPageChanging = true
+                                    if (pan.x > 0) bookPdfReaderViewModel.previousPage()
+                                    else bookPdfReaderViewModel.nextPage()
+                                    offsetX.floatValue = 0f
+                                    offsetY.floatValue = 0f
+                                }
+
+                                if (newScale > defaultScale) {
+                                    offsetX.floatValue = (offsetX.floatValue + pan.x).coerceIn(
+                                        -maxOffsetX,
+                                        maxOffsetX
+                                    )
+                                    offsetY.floatValue = (offsetY.floatValue + pan.y).coerceIn(
+                                        -maxOffsetY,
+                                        maxOffsetY
+                                    )
+                                } else {
+                                    offsetX.floatValue = 0f
+                                    offsetY.floatValue = 0f
+                                }
+                                scaleFactor.floatValue = newScale
+                            }
+                        }
+                        // Reset isPageChanging when gesture ends
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.changes.all { it.changedToUp() }) {
+                                        isPageChanging = false
+                                    }
+                                }
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    currentBitmap.value?.let { bitmap ->
+                        val defaultScale = screenWidthPx / bitmap.width
+                        if (scaleFactor.floatValue < defaultScale) scaleFactor.floatValue = defaultScale
+
+                        Image(
+                            painter = BitmapPainter(bitmap.asImageBitmap()),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .graphicsLayer(
+                                    scaleX = scaleFactor.floatValue,
+                                    scaleY = scaleFactor.floatValue,
+                                    translationX = offsetX.floatValue,
+                                    translationY = offsetY.floatValue
+                                )
+                                .width(screenWidth)
+                        )
+                    }
                 }
-            } else {
-                Column(
+
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .background(Color.White),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        currentBitmap.value?.let { bitmap ->
-                            val screenWidthPx =
-                                with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-                            val screenHeightPx =
-                                with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
-
-                            val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
-                            val screenAspectRatio = screenWidthPx / screenHeightPx
-
-                            val minScale = if (screenAspectRatio > bitmapAspectRatio) {
-                                screenHeightPx / bitmap.height
-                            } else {
-                                screenWidthPx / bitmap.width
-                            }
-
-                            val offsetX = remember { mutableFloatStateOf(0f) }
-                            val offsetY = remember { mutableFloatStateOf(0f) }
-
-                            LaunchedEffect(bitmap) {
-                                scaleFactor.floatValue = minScale
-                                offsetX.floatValue = 0f
-                                offsetY.floatValue = 0f
-                                pageChangeThreshold.floatValue = 0f
-                                pageChangeLocked.value = false
-                            }
-
-                            Image(
-                                painter = BitmapPainter(bitmap.asImageBitmap()),
-                                contentDescription = "PDF Page",
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .graphicsLayer(
-                                        scaleX = scaleFactor.floatValue,
-                                        scaleY = scaleFactor.floatValue,
-                                        translationX = offsetX.floatValue,
-                                        translationY = offsetY.floatValue
-                                    )
-                                    .pointerInput(Unit) {
-                                        detectTransformGestures { _, pan, zoom, _ ->
-                                            val newScale =
-                                                (scaleFactor.floatValue * zoom).coerceAtLeast(
-                                                    minScale
-                                                )
-                                            val scrollSensitivity =
-                                                (newScale / scaleFactor.floatValue)
-
-                                            if (newScale > minScale) {
-                                                pageChangeLocked.value = true
-
-                                                offsetX.floatValue += pan.x * scrollSensitivity
-                                                offsetY.floatValue += pan.y * scrollSensitivity
-                                            } else {
-                                                offsetX.floatValue = 0f
-                                                offsetY.floatValue = 0f
-
-                                                if (!pageChangeLocked.value) {
-                                                    pageChangeThreshold.floatValue += pan.x
-
-                                                    val changePageThreshold = screenWidthPx * 0.2f
-                                                    if (abs(pageChangeThreshold.floatValue) >= changePageThreshold) {
-                                                        if (pageChangeThreshold.floatValue < 0) {
-                                                            bookPdfReaderViewModel.nextPage()
-                                                        } else {
-                                                            bookPdfReaderViewModel.previousPage()
-                                                        }
-                                                        pageChangeThreshold.floatValue = 0f
-                                                    }
-                                                }
-                                            }
-
-                                            scaleFactor.floatValue = newScale
-
-                                            if (newScale == minScale) {
-                                                pageChangeLocked.value = false
-                                            }
-                                        }
-                                    }
-                            )
-                        }
+                    IconButton(onClick = {
+                        bookPdfReaderViewModel.previousPage()
+                        offsetX.floatValue = 0f
+                        offsetY.floatValue = 0f
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous Page",
+                            tint = Color.Black
+                        )
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { bookPdfReaderViewModel.previousPage() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Previous Page",
-                                tint = Color.Black
-                            )
-                        }
+                    Spacer(modifier = Modifier.width(8.dp))
 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         BasicTextField(
-                            value = (currentPage.intValue + 1).toString(),
-                            onValueChange = { newValue ->
-                                newValue.toIntOrNull()?.let {
-                                    val zeroBasedPage = it - 1
-                                    if (zeroBasedPage in 0 until totalPages.intValue) {
-                                        bookPdfReaderViewModel.loadPage(zeroBasedPage)
+                            value = textFieldValue,
+                            onValueChange = {
+                                // Reset to 1 if empty
+                                if (it.isEmpty()) {
+                                    textFieldValue = "1"
+                                    bookPdfReaderViewModel.loadPage(0)
+                                    offsetX.floatValue = 0f
+                                    offsetY.floatValue = 0f
+                                } else {
+                                    val pageNumber = it.toIntOrNull()
+                                    if (pageNumber != null && pageNumber in 1..totalPages.intValue) {
+                                        textFieldValue = it
+                                        bookPdfReaderViewModel.loadPage(pageNumber - 1)
+                                        offsetX.floatValue = 0f
+                                        offsetY.floatValue = 0f
+                                    } else {
+                                        // Ignore invalid input, do not update textFieldValue
                                     }
                                 }
                             },
-                            keyboardActions = KeyboardActions(
-                                onDone = {
-                                    keyboardController?.hide()
-                                    bookPdfReaderViewModel.loadPage(currentPage.intValue)
-                                }
-                            ),
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .width(30.dp),
                             textStyle = TextStyle(
                                 color = Color.Black,
                                 fontSize = 16.sp,
                                 textAlign = TextAlign.Center
                             ),
+                            modifier = Modifier.width(40.dp),
                             singleLine = true
                         )
 
-                        IconButton(onClick = { bookPdfReaderViewModel.nextPage() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Next Page",
-                                tint = Color.Black
-                            )
-                        }
+                        Text(
+                            text = "/ ${totalPages.intValue}",
+                            style = TextStyle(color = Color.Black, fontSize = 16.sp),
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(onClick = {
+                        bookPdfReaderViewModel.nextPage()
+                        offsetX.floatValue = 0f
+                        offsetY.floatValue = 0f
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next Page",
+                            tint = Color.Black
+                        )
+                    }
                 }
             }
         }

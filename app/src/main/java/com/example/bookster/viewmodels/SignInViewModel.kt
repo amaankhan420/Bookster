@@ -2,8 +2,8 @@ package com.example.bookster.viewmodels
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.bookster.states.SignInResult
-import com.example.bookster.states.SignInState
+import com.example.bookster.data.models.SignInResult
+import com.example.bookster.data.models.SignInState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

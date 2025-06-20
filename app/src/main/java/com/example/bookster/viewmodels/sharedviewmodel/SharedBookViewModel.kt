@@ -1,12 +1,11 @@
 package com.example.bookster.viewmodels.sharedviewmodel
 
-import android.os.Parcel
-import android.os.Parcelable
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.bookster.states.Book
+import com.example.bookster.data.models.Book
+import com.example.bookster.utils.author
 import com.example.bookster.utils.cover
 import com.example.bookster.utils.description
 import com.example.bookster.utils.pdf
@@ -16,12 +15,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-@Suppress("DEPRECATION")
-class SharedBookViewModel : ViewModel(), Parcelable {
+class SharedBookViewModel : ViewModel() {
     private val _booksList: MutableState<List<Book>> = mutableStateOf(emptyList())
 
     var booksList = _booksList
-
 
     fun setGenreNameList(books: List<Book>) {
         _booksList.value = books
@@ -38,8 +35,15 @@ class SharedBookViewModel : ViewModel(), Parcelable {
                             val title = document.getString(title)
                             val description = document.getString(description)
                             val pdfUrl = document.getString(pdf)
+                            val author = document.getString(author)
                             val book = Book(
-                                collectionName, document.id, coverUrl, title, description, pdfUrl
+                                collectionName,
+                                document.id,
+                                author,
+                                coverUrl,
+                                title,
+                                description,
+                                pdfUrl
                             )
                             books.add(book)
                         }
@@ -53,26 +57,4 @@ class SharedBookViewModel : ViewModel(), Parcelable {
                 continuation.resumeWithException(e)
             }
         }
-
-    override fun describeContents(): Int {
-        return 0
-    }
-
-    override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeList(booksList.value)
-    }
-
-    companion object CREATOR : Parcelable.Creator<SharedBookViewModel> {
-        override fun createFromParcel(parcel: Parcel): SharedBookViewModel {
-            val viewModel = SharedBookViewModel()
-            val books = mutableListOf<Book>()
-            parcel.readList(books, Book::class.java.classLoader)
-            viewModel.setGenreNameList(books)
-            return viewModel
-        }
-
-        override fun newArray(size: Int): Array<SharedBookViewModel?> {
-            return arrayOfNulls(size)
-        }
-    }
 }

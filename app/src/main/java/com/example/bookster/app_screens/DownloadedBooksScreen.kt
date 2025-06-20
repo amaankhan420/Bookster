@@ -95,7 +95,8 @@ fun DownloadedBooksScreen(
                                 selectedFile.value = file
                                 showDialog.value = true
                             }),
-                        elevation = CardDefaults.cardElevation(4.dp)) {
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .padding(16.dp)
@@ -135,12 +136,18 @@ fun DownloadedBooksScreen(
                             showDialog.value = false
                         }
                     }) {
-                        Text("Delete")
+                        Text(
+                            text = "Delete",
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDialog.value = false }) {
-                        Text("Cancel")
+                        Text(
+                            text = "Cancel",
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 })
         }
